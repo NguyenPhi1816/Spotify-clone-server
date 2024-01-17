@@ -1,6 +1,7 @@
 package com.khaphi.spotifycloneserver.service;
 
 import com.khaphi.spotifycloneserver.config.RsaKeyProperties;
+import com.khaphi.spotifycloneserver.enums.TokenType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -28,20 +29,43 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+    private String getExpiration(TokenType type) {
+        String expirationTimeStr = "";
+        switch (type){
+            case ACCESS -> {
+                expirationTimeStr = environment.getProperty("access_expiration");
+                break;
+            }
+            case REFRESH -> {
+                expirationTimeStr = environment.getProperty("refresh_expiration");
+                break;
+            }
+            default -> {
+                break;
+            }
+        }
+        return expirationTimeStr;
     }
 
-    public String generateToken(
+    public String generateAccessToken(UserDetails userDetails) {
+        return generateToken(new HashMap<>(), userDetails, TokenType.ACCESS);
+    }
+
+    public String generateRefeshToken(UserDetails userDetails) {
+        return generateToken(new HashMap<>(), userDetails, TokenType.REFRESH);
+    }
+
+    private String generateToken(
             Map<String, Object> extraClaims,
-            UserDetails userDetails
+            UserDetails userDetails,
+            TokenType type
     ) {
         return Jwts
                 .builder()
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(calculateExpirationTime()))
+                .setExpiration(new Date(calculateExpirationTime(getExpiration(type))))
                 .signWith(rsaKeys.privateKey(), SignatureAlgorithm.RS256)
                 .compact();
     }
@@ -59,9 +83,7 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    private long calculateExpirationTime() {
-        String expirationTimeStr = environment.getProperty("expiration_time");
-
+    private long calculateExpirationTime(String expirationTimeStr) {
         if (expirationTimeStr != null) {
             try {
                 return System.currentTimeMillis() + Long.parseLong(expirationTimeStr);

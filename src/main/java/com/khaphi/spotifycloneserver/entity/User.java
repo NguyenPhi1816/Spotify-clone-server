@@ -1,5 +1,6 @@
 package com.khaphi.spotifycloneserver.entity;
 
+import com.khaphi.spotifycloneserver.enums.Gender;
 import com.khaphi.spotifycloneserver.enums.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -18,22 +20,38 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name="users")
+@Table(name="user")
 public class User implements UserDetails {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    @Column(name="firstname")
+
+    @Column(name="firstname", length = 50, nullable = false)
     private String firstName;
-    @Column(name="lastname")
+
+    @Column(name="lastname", length = 50, nullable = false)
     private String lastName;
+
+    @Column(name = "email", unique = true, nullable = false)
     private String email;
+
+    @Column(name = "password", length = 100,nullable = false)
     private String password;
+
+    @Column(name = "createat", nullable = false)
+    private LocalDateTime createAt;
+
     @Enumerated(EnumType.STRING)
-    private Role roles;
+    @Column(name = "gender", nullable = false)
+    private Gender gender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private Role role;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(roles.name()));
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
     public String getFullname() {

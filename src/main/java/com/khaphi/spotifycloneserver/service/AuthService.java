@@ -1,11 +1,17 @@
 package com.khaphi.spotifycloneserver.service;
 
+import com.khaphi.spotifycloneserver.entity.User;
 import com.khaphi.spotifycloneserver.repository.UserRepository;
 import com.khaphi.spotifycloneserver.request.AuthRequest;
+import com.khaphi.spotifycloneserver.request.RegisterRequest;
 import com.khaphi.spotifycloneserver.response.AuthResponse;
+import com.khaphi.spotifycloneserver.response.UserResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderNotFoundException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,20 +23,33 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
 
-//    public AuthResponse register(RegisterRequest request) {
-//        var user = User.builder()
-//                .firstName(request.getFirstname())
-//                .lastName(request.getLastname())
-//                .email(request.getEmail())
-//                .password(passwordEncoder.encode(request.getPassword()))
-//                .roles(Role.USER)
-//                .build();
-//        userRepository.save(user);
-//        var jwtToken = jwtService.generateToken(user);
-//        return AuthenticationResponse.builder()
-//                .token(jwtToken)
-//                .build();
-//    }
+    public AuthResponse register(RegisterRequest request) {
+        var user = User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .gender(request.getGender())
+                .role(request.getRole())
+                .createAt(request.getCreateAt())
+                .build();
+        User savedUser = userRepository.save(user);
+        var jwtToken = jwtService.generateAccessToken(user);
+        var refreshToken = jwtService.generateRefeshToken(user);
+        var userResponse = UserResponse.builder()
+                .id(savedUser.getId())
+                .firstName(savedUser.getFirstName())
+                .lastName(savedUser.getLastName())
+                .createAt(savedUser.getCreateAt())
+                .gender(savedUser.getGender())
+                .role(savedUser.getRole())
+                .build();
+        return AuthResponse.builder()
+                .accessToken(jwtToken)
+                .refreshToken(refreshToken)
+                .user(userResponse)
+                .build();
+    }
 
     public AuthResponse authenticate(AuthRequest request) {
         authenticationManager.authenticate(
@@ -39,10 +58,22 @@ public class AuthService {
                         request.getPassword()
                 )
         );
-        var user = userRepository.findByEmail(request.getEmail()).orElseThrow();
-        var jwtToken = jwtService.generateToken(user);
+        var user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(()-> new UsernameNotFoundException("User not found"));
+        var jwtToken = jwtService.generateAccessToken(user);
+        var refreshToken = jwtService.generateRefeshToken(user);
+        var userResponse = UserResponse.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .createAt(user.getCreateAt())
+                .gender(user.getGender())
+                .role(user.getRole())
+                .build();
         return AuthResponse.builder()
-                .token(jwtToken)
+                .accessToken(jwtToken)
+                .refreshToken(refreshToken)
+                .user(userResponse)
                 .build();
     }
 }

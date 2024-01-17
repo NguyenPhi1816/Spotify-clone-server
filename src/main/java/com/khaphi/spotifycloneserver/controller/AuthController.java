@@ -1,6 +1,7 @@
 package com.khaphi.spotifycloneserver.controller;
 
 import com.khaphi.spotifycloneserver.request.AuthRequest;
+import com.khaphi.spotifycloneserver.request.RegisterRequest;
 import com.khaphi.spotifycloneserver.response.AuthResponse;
 import com.khaphi.spotifycloneserver.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -17,12 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService authenticationService;
 
-//    @PostMapping("/register")
-//    public ResponseEntity<AuthenticationResponse> register(
-//            @RequestBody RegisterRequest request
-//    ) {
-//        return ResponseEntity.ok(authenticationService.register(request));
-//    }
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(
+            @RequestBody RegisterRequest request
+    ) {
+        return ResponseEntity.ok(authenticationService.register(request));
+    }
 
     @PostMapping("/authenticate")
     public ResponseEntity<AuthResponse> authenticate(
